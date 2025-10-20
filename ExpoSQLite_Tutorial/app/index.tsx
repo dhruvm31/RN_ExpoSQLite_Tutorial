@@ -12,6 +12,7 @@ import {
 import { deleteItem, fetchItems, insertItem, updateItem, type Item } from "../data/db";
 import ItemRow from "./components/ItemRow";
 
+
 export default function App() {
   /**
    * Database Access
@@ -31,6 +32,7 @@ export default function App() {
   const [name, setName] = useState<string>("");
   const [quantity, setQuantity] = useState<string>("");
   const [editingId, setEditingId] = useState<number | null>(null);
+  const [isVisible, setIsVisible] = useState(true);
 
   /**
    * Database State
@@ -70,6 +72,11 @@ export default function App() {
   const loadItems = async () => {
     try {
       const value = await fetchItems(db);
+
+      // Sort items by name A-Z ---IGNORE
+      //const sortedItems = value.sort((a, b) =>
+      //  a.name.localeCompare(b.name)
+      //);
       setItems(value);
     } catch (err) {
       console.log("Failed to fetch items", err);
@@ -241,45 +248,62 @@ export default function App() {
         Save Button
         Triggers the saveOrUpdate function which validates and saves to database.
       */}
+      <Button title="Sort A-Z"/>
+      <Button title="Sort Z-A"/>
+      <Button title="Sort Low-High"/>
+      <Button title="Sort High-Low"/>
+
       <Button
         title={editingId === null ? "Save Item" : "Update Item"}
         onPress={saveOrUpdate}
       />
-      <FlatList
-        style={styles.list}
-        data={items}
-        keyExtractor={(item) => item.id.toString()}
-        ItemSeparatorComponent={() => (
-          <View
-            style={{
-              height: 1,
-              backgroundColor: "#eee",
-              marginLeft: 14,
-              marginRight: 14,
-            }}
+
+      {/*This toggles the flatlist to be visible or invisbility.
+        1. Button starts off as "Hide Items"
+        2. If you click it, list toggles off (boolean turned false)
+        3. Button now shows "See Items"
+        4. List is visible after clicking the the button
+        FlatList will only render if the boolean is truem otherwise it's not rendered
+        Assisted by ChatGPT, and by myself as well 
+        */}
+      <Button title={isVisible ? "Hide Items" : "See Items"} onPress={() => setIsVisible(!isVisible)}></Button>
+        {isVisible && (
+          <FlatList
+            style={styles.list}
+            data={items}
+            keyExtractor={(item) => item.id.toString()}
+            ItemSeparatorComponent={() => (
+              <View
+                style={{
+                  height: 1,
+                  backgroundColor: "#eee",
+                  marginLeft: 14,
+                  marginRight: 14,
+                }}
+              />
+            )}
+            renderItem={({ item }) => (
+              //<ItemRow name={item.name} quantity={item.quantity} />
+              //Inside the FlatList, update it so it properly calls the ItemRow component for renderItem
+              <ItemRow
+                name={item.name}
+                quantity={item.quantity}
+                onEdit={() => startEdit(item)}
+                onDelete={() => confirmDelete(item.id)}
+              />
+            )}
+            ListEmptyComponent={
+              <Text style={{ textAlign: "center", marginTop: 24, color: "#888" }}>
+                No items yet. Add your first one above.
+              </Text>
+            }
+            contentContainerStyle={
+              items.length === 0
+                ? { flexGrow: 1, justifyContent: "center" }
+                : undefined
+            }
           />
         )}
-        renderItem={({ item }) => (
-          //<ItemRow name={item.name} quantity={item.quantity} />
-          //Inside the FlatList, update it so it properly calls the ItemRow component for renderItem
-          <ItemRow
-            name={item.name}
-            quantity={item.quantity}
-            onEdit={() => startEdit(item)}
-            onDelete={() => confirmDelete(item.id)}
-          />
-        )}
-        ListEmptyComponent={
-          <Text style={{ textAlign: "center", marginTop: 24, color: "#888" }}>
-            No items yet. Add your first one above.
-          </Text>
-        }
-        contentContainerStyle={
-          items.length === 0
-            ? { flexGrow: 1, justifyContent: "center" }
-            : undefined
-        }
-      />
     </View>
   );
 }
